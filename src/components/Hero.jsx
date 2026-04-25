@@ -1,9 +1,17 @@
-import React from 'react'
+import React, { useRef } from 'react';
 import gsap from 'gsap';
-import { useGSAP } from "@gsap/react";
-import { SplitText } from "gsap/all";
+import { useGSAP } from '@gsap/react';
+import { SplitText, ScrollTrigger } from 'gsap/all';
+import { useMediaQuery } from 'react-responsive';
+
+gsap.registerPlugin(useGSAP, SplitText, ScrollTrigger);
 
 const Hero = () => {
+    const videoRef = useRef();
+    const videoTimelineRef = useRef();
+
+    const isMobile = useMediaQuery({ query: '(max-width: 600px)' });
+
     useGSAP(() => {
         const heroSplit = new SplitText('.title', { type: 'chars, words' });
         const paragraphSplit = new SplitText('.subtitle', { type: 'lines' });
@@ -15,7 +23,7 @@ const Hero = () => {
             duration: 1.8,
             ease: 'expo.out',
             stagger: 0.06
-        })
+        });
 
         gsap.from(paragraphSplit.lines, {
             opacity: 0,
@@ -24,19 +32,38 @@ const Hero = () => {
             ease: 'expo.out',
             stagger: 0.06,
             delay: 1
-        })
+        });
 
         gsap.timeline({
             scrollTrigger: {
                 trigger: '#hero',
                 start: 'top top',
-                end: 'end top',
+                end: 'bottom top',
                 scrub: true
             }
         })
             .to('.right-leaf', { y: 200 }, 0)
             .to('.left-leaf', { y: -200 }, 0);
-    }, [])
+
+        const startValue = isMobile ? 'top 50%' : 'center 60%';
+        const endValue = isMobile ? '120% top' : 'bottom top';
+
+        videoTimelineRef.current = gsap.timeline({
+            scrollTrigger: {
+                trigger: 'video',
+                start: startValue,
+                end: endValue,
+                scrub: true,
+                pin: true
+            }
+        });
+
+        videoRef.current.onloadedmetadata = () => {
+            videoTimelineRef.current.to(videoRef.current, {
+                currentTime: videoRef.current.duration
+            });
+        };
+    }, []);
 
     return (
         <>
@@ -74,8 +101,17 @@ const Hero = () => {
                         </div>
                     </div>
                 </div>
-
             </section>
+
+            <div className="video absolute inset-0">
+                <video
+                    ref={videoRef}
+                    src="/videos/output.mp4"
+                    muted
+                    playsInline
+                    preload="auto"
+                />
+            </div>
         </>
     );
 };
